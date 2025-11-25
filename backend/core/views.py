@@ -294,3 +294,63 @@ class NowPlayingView(APIView):
                 "album_image": item.get("album", {}).get("images", [{}])[0].get("url")
             }
         )
+
+class RecentlyPlayedView(APIView):
+    """
+    GET /user/recently-played/
+
+    Returns the user's 5 most recently played tracks.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Ensure Spotify account exists
+        try:
+            account = user.spotify_account
+        except SpotifyAccount.DoesNotExist:
+            return Response({"detail": "Spotify account not found"}, status=400)
+
+        # Refresh access token if needed
+        access_token = refresh_spotify_token(account)
+
+        # Call Spotify API for recently played tracks
+        resp = requests.get(
+            "https://api.spotify.com/v1/me/player/recently-played",
+            params={"limit": 5},
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+
+        if resp.status_code != 200:
+            return Response(
+                {
+                    "detail": "Failed to fetch recently played tracks",
+                    "status_code": resp.status_code,
+                    "response": resp.text,
+                },
+                status=resp.status_code,
+            )
+
+        data = resp.json()
+        items = data.get("items", [])
+
+        tracks = []
+        for item in items:
+            track = item.get("track") or {}
+            played_at = item.get("played_at")
+
+            tracks.append(
+                {
+                    "played_at": played_at,
+                    "track_name": track.get("name"),
+                    "artists": [a["name"] for a in track.get("artists", [])],
+                    "album": track.get("album", {}).get("name"),
+                    "album_image": track.get("album", {}).get("images", [{}])[0].get(
+                        "url"
+                    ),
+                    "duration_ms": track.get("duration_ms"),
+                }
+            )
+
+        return Response({"items": tracks})
