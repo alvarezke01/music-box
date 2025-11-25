@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import SpotifyAccount
+from .serializers import UserSerializer
 
 User = get_user_model()
 
@@ -203,3 +204,14 @@ class SpotifyCallbackView(APIView):
             }
         )
 
+class AuthUserView(APIView):
+    """
+    GET /auth/user/
+    Returns currently authenticated user's profile
+    Requires valid JWT access token
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
