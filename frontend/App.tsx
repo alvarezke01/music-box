@@ -1,6 +1,7 @@
 import "react-native-gesture-handler";
 import "react-native-reanimated";
 import React from "react";
+import { View, ActivityIndicator } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,8 +23,23 @@ export type RootTabParamList = {
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-const AppNavigator = () => {
-  const { isAuthenticated } = useAuth();
+const AppNavigator: React.FC = () => {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#050814",
+          justifyContent: "center",
+          alignItems: "center",
+        }}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
 
   return (
     <NavigationContainer>
@@ -48,7 +64,9 @@ const AppNavigator = () => {
               if (route.name === "Library") iconName = "musical-notes-outline";
               if (route.name === "Profile") iconName = "person-outline";
 
-              return <Ionicons name={iconName as any} size={size} color={color} />;
+              return (
+                <Ionicons name={iconName as any} size={size} color={color} />
+              );
             },
           })}
         >

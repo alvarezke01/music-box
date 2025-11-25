@@ -51,9 +51,11 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
 
     'core',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,6 +64,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:8081",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 ROOT_URLCONF = 'config.urls'
 
@@ -161,3 +169,6 @@ SPOTIFY_SCOPES = os.getenv(
     "SPOTIFY_SCOPES",
     "user-read-email",
 )
+
+
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:8081")

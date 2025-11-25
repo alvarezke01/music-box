@@ -183,26 +183,17 @@ class SpotifyCallbackView(APIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
-        return Response(
+        params = urlencode(
             {
-                "user": {
-                    "id": user.id,
-                    "username": user.username,
-                    "email": user.email,
-                    "display_name": account.display_name,
-                    "spotify_id": account.spotify_id,
-                },
-                "jwt": {
-                    "access": str(access),
-                    "refresh": str(refresh),
-                },
-                "spotify": {
-                    "access_token": access_token,
-                    "refresh_token": refresh_token,
-                    "expires_in": expires_in,
-                },
+                "access": str(access),
+                "refresh": str(refresh),
             }
         )
+
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:8081")
+        redirect_url = f"{frontend_url}/?{params}"
+
+        return redirect(redirect_url)
 
 class AuthUserView(APIView):
     """
