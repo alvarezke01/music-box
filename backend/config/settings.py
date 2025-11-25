@@ -12,16 +12,24 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Load environment variables from .env at project root
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-uzdxzyp2g&0yx)y#ryd)54sf2!8nu1#3!ze2!h71!!=-2vhl-8'
+# Read from environment, fallback to the original for local/dev
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-uzdxzyp2g&0yx)y#ryd)54sf2!8nu1#3!ze2!h71!!=-2vhl-8",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -142,3 +150,14 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 }
+
+
+# === Spotify OAuth settings ===
+
+SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
+SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
+SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
+SPOTIFY_SCOPES = os.getenv(
+    "SPOTIFY_SCOPES",
+    "user-read-email",
+)
