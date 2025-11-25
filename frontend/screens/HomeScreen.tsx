@@ -3,7 +3,9 @@ import { ScrollView, Text } from "react-native";
 import { homeStyles } from "./styles/homeStyles";
 import { useAuth } from "../auth/AuthContext";
 import { useNowPlaying } from "../hooks/useNowPlaying";
+import { useRecentlyPlayed } from "../hooks/useRecentlyPlayed";
 import { NowPlayingCard } from "../components/NowPlayingCard";
+import { RecentlyPlayedCard } from "../components/RecentlyPlayedCard";
 
 export const HomeScreen: React.FC = () => {
   const { user, accessToken } = useAuth();
@@ -14,11 +16,17 @@ export const HomeScreen: React.FC = () => {
     error,
   } = useNowPlaying(accessToken);
 
+  const {
+    items: recentlyPlayedItems,
+    loading: recentlyPlayedLoading,
+    error: recentlyPlayedError,
+  } = useRecentlyPlayed(accessToken);
+
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: "#050814" }} // Safe container styles
+      style={{ flex: 1, backgroundColor: "#050814" }}
       contentContainerStyle={{
-        ...homeStyles.container, // Layout here
+        ...homeStyles.container,
         paddingBottom: 32,
       }}
     >
@@ -32,7 +40,12 @@ export const HomeScreen: React.FC = () => {
         loading={loading}
         error={error}
       />
+
+      <RecentlyPlayedCard
+        items={recentlyPlayedItems}
+        loading={recentlyPlayedLoading}
+        error={recentlyPlayedError}
+      />
     </ScrollView>
   );
 };
-
