@@ -11,9 +11,11 @@ from django.contrib.auth import get_user_model
 
 from rest_framework.views import APIView
 from rest_framework import permissions
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from .spotify import refresh_spotify_token
 from .models import SpotifyAccount
 from .serializers import UserSerializer
 
@@ -206,3 +208,89 @@ class AuthUserView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+class NowPlayingView(APIView):
+    """
+    GET /user/now-playing/
+
+    Returns:
+      - currently playing track (status = "playing")
+      - paused track (status = "paused")
+      - inactive if nothing is playing
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        # Ensure Spotify account exists
+        try:
+            account = user.spotify_account
+        except SpotifyAccount.DoesNotExist:
+            return Response({"detail": "Spotify account not found"}, status=400)
+
+        # Refresh token
+        access_token = refresh_spotify_token(account)
+
+        # Call Spotify API
+        resp = requests.get(
+            "https://api.spotify.com/v1/me/player/currently-playing",
+            headers={"Authorization": f"Bearer {access_token}"}
+        )
+
+        # No active device or nothing playing
+        if resp.status_code == 204:
+            return Response({
+                "status": "inactive",
+                "is_playing": False,
+                "track_name": None,
+                "artists": [],
+                "album": None,
+                "album_image": None,
+                "progress_ms": None,
+                "duration_ms": None
+            })
+
+        # Error case
+        if resp.status_code != 200:
+            return Response(
+                {
+                    "detail": "Failed to fetch currently playing",
+                    "status_code": resp.status_code,
+                    "response": resp.text,
+                },
+                status=resp.status_code,
+            )
+
+        data = resp.json()
+        item = data.get("item")
+
+        # Active device but no track item
+        if not item:
+            return Response({
+                "status": "inactive",
+                "is_playing": False,
+                "track_name": None,
+                "artists": [],
+                "album": None,
+                "album_image": None,
+                "progress_ms": None,
+                "duration_ms": None
+            })
+
+        # Determine play state
+        is_playing = data.get("is_playing", False)
+        status = "playing" if is_playing else "paused"
+
+        return Response(
+            {
+                "status": status,
+                "is_playing": is_playing,
+                "progress_ms": data.get("progress_ms"),
+                "duration_ms": item.get("duration_ms"),
+                "track_name": item.get("name"),
+                "artists": [a["name"] for a in item.get("artists", [])],
+                "album": item.get("album", {}).get("name"),
+                "album_image": item.get("album", {}).get("images", [{}])[0].get("url")
+            }
+        )
