@@ -9,6 +9,9 @@ import { HomeScreen } from "./screens/HomeScreen";
 import { DiscoverScreen } from "./screens/DiscoverScreen";
 import { LibraryScreen } from "./screens/LibraryScreen";
 import { ProfileScreen } from "./screens/ProfileScreen";
+import { LoginScreen } from "./screens/LoginScreen";
+
+import { AuthProvider, useAuth } from "./auth/AuthContext";
 
 export type RootTabParamList = {
   Home: undefined;
@@ -19,44 +22,52 @@ export type RootTabParamList = {
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
-export default function App() {
+const AppNavigator = () => {
+  const { isAuthenticated } = useAuth();
+
   return (
     <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarStyle: {
-            backgroundColor: "#050814",
-            borderTopColor: "#151822",
-          },
-          tabBarActiveTintColor: "#ffffff",
-          tabBarInactiveTintColor: "#888ba0",
-          tabBarLabelStyle: {
-            fontSize: 11,
-          },
-          tabBarIcon: ({ color, size }) => {
-            let iconName: keyof typeof Ionicons.glyphMap = "home";
+      {isAuthenticated ? (
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: "#050814",
+              borderTopColor: "#151822",
+            },
+            tabBarActiveTintColor: "#ffffff",
+            tabBarInactiveTintColor: "#888ba0",
+            tabBarLabelStyle: {
+              fontSize: 11,
+            },
+            tabBarIcon: ({ color, size }) => {
+              let iconName: string = "home-outline";
 
-            if (route.name === "Home") {
-              iconName = "home-outline";
-            } else if (route.name === "Discover") {
-              iconName = "search-outline";
-            } else if (route.name === "Library") {
-              iconName = "musical-notes-outline";
-            } else if (route.name === "Profile") {
-              iconName = "person-outline";
-            }
+              if (route.name === "Home") iconName = "home-outline";
+              if (route.name === "Discover") iconName = "search-outline";
+              if (route.name === "Library") iconName = "musical-notes-outline";
+              if (route.name === "Profile") iconName = "person-outline";
 
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-        })}
-      >
-        <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="Discover" component={DiscoverScreen} />
-        <Tab.Screen name="Library" component={LibraryScreen} />
-        <Tab.Screen name="Profile" component={ProfileScreen} />
-      </Tab.Navigator>
+              return <Ionicons name={iconName as any} size={size} color={color} />;
+            },
+          })}
+        >
+          <Tab.Screen name="Home" component={HomeScreen} />
+          <Tab.Screen name="Discover" component={DiscoverScreen} />
+          <Tab.Screen name="Library" component={LibraryScreen} />
+          <Tab.Screen name="Profile" component={ProfileScreen} />
+        </Tab.Navigator>
+      ) : (
+        <LoginScreen />
+      )}
     </NavigationContainer>
   );
-}
+};
 
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppNavigator />
+    </AuthProvider>
+  );
+}

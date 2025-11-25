@@ -1,13 +1,10 @@
 import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { loginStyles } from "./styles/loginStyles";
+import { useAuth } from "../auth/AuthContext";
 
 export const LoginScreen: React.FC = () => {
-
-  const handleConnectSpotify = () => {
-    // TODO: call backend /auth/spotify/login/ and handle redirect
-    console.log("Connect with Spotify pressed");
-  };
+  const { login } = useAuth();
 
   return (
     <View style={loginStyles.container}>
@@ -19,7 +16,7 @@ export const LoginScreen: React.FC = () => {
 
       <TouchableOpacity
         style={loginStyles.button}
-        onPress={handleConnectSpotify}
+        onPress={login}
         activeOpacity={0.8}
       >
         <Text style={loginStyles.buttonText}>Connect with Spotify</Text>
