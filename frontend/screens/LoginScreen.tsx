@@ -1,10 +1,21 @@
 import React from "react";
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Platform } from "react-native";
+import * as Linking from "expo-linking";
 import { loginStyles } from "./styles/loginStyles";
-import { useAuth } from "../auth/AuthContext";
+import { API_BASE_URL } from "../config";
 
 export const LoginScreen: React.FC = () => {
-  const { login } = useAuth();
+  const handleConnectSpotify = () => {
+    const loginUrl = `${API_BASE_URL}/auth/spotify/login/`;
+
+    if (Platform.OS === "web") {
+      // On web: full redirect to backend which will redirect to Spotify
+      window.location.href = loginUrl;
+    } else {
+      // On native: open external browser
+      Linking.openURL(loginUrl);
+    }
+  };
 
   return (
     <View style={loginStyles.container}>
@@ -16,7 +27,7 @@ export const LoginScreen: React.FC = () => {
 
       <TouchableOpacity
         style={loginStyles.button}
-        onPress={login}
+        onPress={handleConnectSpotify}
         activeOpacity={0.8}
       >
         <Text style={loginStyles.buttonText}>Connect with Spotify</Text>
