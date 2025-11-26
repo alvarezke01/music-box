@@ -28,15 +28,19 @@ export const useNowPlaying = (
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchNowPlaying = async () => {
+  // showLoading = true for initial load, false for background polls
+  const fetchNowPlaying = async (showLoading: boolean = true) => {
     if (!accessToken) {
       setLoading(false);
+      setData(null);
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
+      if (showLoading) {
+        setLoading(true);
+        setError(null);
+      }
 
       const resp = await fetch(`${API_BASE_URL}/user/now-playing/`, {
         headers: {
@@ -54,15 +58,37 @@ export const useNowPlaying = (
       console.error("useNowPlaying error:", err);
       setError("Unable to load now playing.");
     } finally {
-      setLoading(false);
+      if (showLoading) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
-    fetchNowPlaying();
+    if (!accessToken) {
+      setLoading(false);
+      setData(null);
+      setError(null);
+      return;
+    }
+
+    // Initial load with spinner
+    fetchNowPlaying(true);
+
+    // Background poll every 15 seconds (no spinner)
+    const intervalId = setInterval(() => {
+      fetchNowPlaying(false);
+    }, 15000);
+
+    return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accessToken]);
 
-  return { data, loading, error, refetch: fetchNowPlaying };
+  return {
+    data,
+    loading,
+    error,
+    refetch: () => fetchNowPlaying(true),
+  };
 };
 
