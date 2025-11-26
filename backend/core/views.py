@@ -299,7 +299,9 @@ class RecentlyPlayedView(APIView):
     """
     GET /user/recently-played/
 
-    Returns the user's 5 most recently played tracks.
+    Returns the user's recently played tracks with:
+      - NO consecutive duplicate tracks
+      - Still maximum of 5 *unique consecutive* items
     """
     permission_classes = [IsAuthenticated]
 
@@ -315,10 +317,10 @@ class RecentlyPlayedView(APIView):
         # Refresh access token if needed
         access_token = refresh_spotify_token(account)
 
-        # Call Spotify API for recently played tracks
+        # Fetch from Spotify
         resp = requests.get(
             "https://api.spotify.com/v1/me/player/recently-played",
-            params={"limit": 5},
+            params={"limit": 10},  # grab more to allow dedupe
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
@@ -335,22 +337,31 @@ class RecentlyPlayedView(APIView):
         data = resp.json()
         items = data.get("items", [])
 
-        tracks = []
+        cleaned = []
+        last_track_name = None
+
         for item in items:
             track = item.get("track") or {}
+            track_name = track.get("name")
             played_at = item.get("played_at")
 
-            tracks.append(
-                {
-                    "played_at": played_at,
-                    "track_name": track.get("name"),
-                    "artists": [a["name"] for a in track.get("artists", [])],
-                    "album": track.get("album", {}).get("name"),
-                    "album_image": track.get("album", {}).get("images", [{}])[0].get(
-                        "url"
-                    ),
-                    "duration_ms": track.get("duration_ms"),
-                }
-            )
+            # Skip if same song appears consecutively
+            if track_name == last_track_name:
+                continue
 
-        return Response({"items": tracks})
+            cleaned.append({
+                "played_at": played_at,
+                "track_name": track_name,
+                "artists": [a["name"] for a in track.get("artists", [])],
+                "album": track.get("album", {}).get("name"),
+                "album_image": track.get("album", {}).get("images", [{}])[0].get("url"),
+                "duration_ms": track.get("duration_ms"),
+            })
+
+            last_track_name = track_name
+
+            # Only return at most 5 unique consecutive tracks
+            if len(cleaned) == 5:
+                break
+
+        return Response({"items": cleaned})
