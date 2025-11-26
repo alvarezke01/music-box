@@ -295,13 +295,14 @@ class NowPlayingView(APIView):
             }
         )
 
+
 class RecentlyPlayedView(APIView):
     """
     GET /user/recently-played/
 
     Returns the user's recently played tracks with:
-      - NO consecutive duplicate tracks
-      - Still maximum of 5 *unique consecutive* items
+      - NO duplicate tracks (global dedupe, not just consecutive)
+      - At most 5 unique tracks
     """
     permission_classes = [IsAuthenticated]
 
@@ -317,10 +318,10 @@ class RecentlyPlayedView(APIView):
         # Refresh access token if needed
         access_token = refresh_spotify_token(account)
 
-        # Fetch from Spotify
+        # Fetch from Spotify – get 20 to dedupe
         resp = requests.get(
             "https://api.spotify.com/v1/me/player/recently-played",
-            params={"limit": 10},  # grab more to allow dedupe
+            params={"limit": 20},
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
@@ -338,15 +339,23 @@ class RecentlyPlayedView(APIView):
         items = data.get("items", [])
 
         cleaned = []
-        last_track_name = None
+        seen_tracks = set()  # track IDs already returned
 
         for item in items:
             track = item.get("track") or {}
+            track_id = track.get("id")
             track_name = track.get("name")
             played_at = item.get("played_at")
 
-            # Skip if same song appears consecutively
-            if track_name == last_track_name:
+            # Skip broken entries
+            if not track_name:
+                continue
+
+            # Use track_id if available, otherwise fall back to name
+            dedupe_key = track_id or track_name
+
+            # Skip if included track 
+            if dedupe_key in seen_tracks:
                 continue
 
             cleaned.append({
@@ -358,9 +367,9 @@ class RecentlyPlayedView(APIView):
                 "duration_ms": track.get("duration_ms"),
             })
 
-            last_track_name = track_name
+            seen_tracks.add(dedupe_key)
 
-            # Only return at most 5 unique consecutive tracks
+            # Only return at most 5 unique tracks
             if len(cleaned) == 5:
                 break
 
