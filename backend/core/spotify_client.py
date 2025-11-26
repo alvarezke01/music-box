@@ -5,6 +5,12 @@ from django.utils import timezone
 from datetime import timedelta
 from .models import SpotifyAccount
 
+BASE_URL = "https://api.spotify.com/v1"
+
+class SpotifyAPIError(Exception):
+    """Raised when Spotify returns a non-success response."""
+    pass
+
 
 def refresh_spotify_token(account: SpotifyAccount):
     """
@@ -44,3 +50,36 @@ def refresh_spotify_token(account: SpotifyAccount):
     account.save(update_fields=["access_token", "token_expires_at"])
 
     return new_access
+
+def spotify_get(path: str, access_token: str, params=None):
+    url = f"{BASE_URL}{path}"
+    headers = {"Authorization": f"Bearer {access_token}"}
+
+    resp = requests.get(url, headers=headers, params=params or {})
+
+    if resp.status_code == 204:
+        return None
+
+    if not resp.ok:
+        try:
+            detail = resp.json()
+        except:
+            detail = resp.text
+        raise SpotifyAPIError(f"Spotify GET {path} failed: {detail}")
+
+    return resp.json()
+
+def spotify_user_get(path: str, account: SpotifyAccount, params=None):
+    """
+    GET for an authenticated user:
+    - refreshes token if needed
+    - retries once if expired during request
+    """
+    access_token = refresh_spotify_token(account)
+
+    try:
+        return spotify_get(path, access_token, params=params)
+    except SpotifyAPIError:
+        # token may have just expired mid-request → refresh + retry
+        access_token = refresh_spotify_token(account)
+        return spotify_get(path, access_token, params=params)

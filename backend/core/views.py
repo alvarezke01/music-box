@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .spotify import refresh_spotify_token
+from .spotify_client import refresh_spotify_token
 from .models import SpotifyAccount
 from .serializers import UserSerializer
 
