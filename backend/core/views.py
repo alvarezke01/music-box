@@ -15,7 +15,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .spotify_client import refresh_spotify_token
+from .spotify_client import refresh_spotify_token, spotify_user_get, SpotifyAPIError
 from .models import SpotifyAccount
 from .serializers import UserSerializer
 
@@ -374,3 +374,119 @@ class RecentlyPlayedView(APIView):
                 break
 
         return Response({"items": cleaned})
+    
+class SearchMusicView(APIView):
+    """
+    GET /discover/search/music/?q=<query>&type=track,album,artist
+
+    Uses logged-in user's Spotify account to search for tracks, albums,
+    and artists via Spotify's /search endpoint, and returns JSON
+    structure grouped by type.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Read query parameters
+        query = request.query_params.get("q")
+        type_param = request.query_params.get("type", "track,album,artist")
+
+        if not query:
+            return Response(
+                {"detail": "Missing required query parameter 'q'."},
+                status=400,
+            )
+
+        # Ensure user has linked Spotify account
+        try:
+            account = request.user.spotify_account
+        except SpotifyAccount.DoesNotExist:
+            return Response(
+                {"detail": "Spotify account not found for this user."},
+                status=400,
+            )
+
+        # Call Spotify /search via spotify_user_get (handles refresh + retry)
+        try:
+            raw = spotify_user_get(
+                "/search",
+                account=account,
+                params={
+                    "q": query,
+                    "type": type_param,  #  track, album, artist
+                    "limit": 10,
+                },
+            )
+        except SpotifyAPIError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=502,
+            )
+
+        # Normalize response
+        normalized = self._normalize_search_results(raw or {})
+        return Response(normalized)
+
+    def _normalize_search_results(self, raw):
+        """
+        Shape Spotify /search response into:
+
+        {
+          "tracks": [...],
+          "albums": [...],
+          "artists": [...]
+        }
+        """
+        def first_image(images):
+            if not images:
+                return None
+            return images[0].get("url")
+
+        results = {
+            "tracks": [],
+            "albums": [],
+            "artists": [],
+        }
+
+        
+        tracks_block = raw.get("tracks") or {}
+        for item in tracks_block.get("items", []):
+            results["tracks"].append(
+                {
+                    "id": item.get("id"),
+                    "type": "track",
+                    "name": item.get("name"),
+                    "artists": [a.get("name") for a in (item.get("artists") or [])],
+                    "album": (item.get("album") or {}).get("name"),
+                    "album_image": first_image((item.get("album") or {}).get("images") or []),
+                    "duration_ms": item.get("duration_ms"),
+                }
+            )
+
+        
+        albums_block = raw.get("albums") or {}
+        for item in albums_block.get("items", []):
+            results["albums"].append(
+                {
+                    "id": item.get("id"),
+                    "type": "album",
+                    "name": item.get("name"),
+                    "artists": [a.get("name") for a in (item.get("artists") or [])],
+                    "image": first_image(item.get("images") or []),
+                    "release_date": item.get("release_date"),
+                }
+            )
+
+        artists_block = raw.get("artists") or {}
+        for item in artists_block.get("items", []):
+            results["artists"].append(
+                {
+                    "id": item.get("id"),
+                    "type": "artist",
+                    "name": item.get("name"),
+                    "image": first_image(item.get("images") or []),
+                    "followers": (item.get("followers") or {}).get("total"),
+                    "genres": item.get("genres") or [],
+                }
+            )
+
+        return results
