@@ -16,8 +16,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .spotify_client import refresh_spotify_token, spotify_user_get, SpotifyAPIError
-from .models import SpotifyAccount
-from .serializers import UserSerializer
+from .models import SpotifyAccount, Rating
+from .serializers import UserSerializer, RatingSerializer
 
 User = get_user_model()
 
@@ -490,3 +490,38 @@ class SearchMusicView(APIView):
             )
 
         return results
+
+class RatingListCreateView(APIView):
+    """
+    GET /ratings/
+    List the current user's ratings (most recently updated first)
+
+    POST /ratings/
+    Create or update (upsert) a rating for a track/album/artist.
+
+    Example POST body:
+    {
+      "spotify_id": "06HL4z0CvFAxyc27GXpf02",
+      "item_type": "artist",
+      "rating": 4.75
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Only return ratings for authenticated user
+        qs = Rating.objects.filter(user=request.user).order_by("-updated_at")
+        serializer = RatingSerializer(qs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        # Use serializer's upsert logic; user comes from request
+        serializer = RatingSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        rating_obj = serializer.create(serializer.validated_data)
+        # Re-serialize to include read-only fields
+        output = RatingSerializer(rating_obj)
+        return Response(output.data, status=201)
