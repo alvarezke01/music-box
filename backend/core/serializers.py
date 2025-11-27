@@ -43,6 +43,7 @@ class RatingSerializer(serializers.ModelSerializer):
             "id",
             "spotify_id",
             "item_type",
+            "item_name",   
             "rating",
             "created_at",
             "updated_at",
@@ -53,18 +54,24 @@ class RatingSerializer(serializers.ModelSerializer):
         """
         Upsert:
         If rating for (user, spotify_id, item_type) already exists,
-        update its rating value instead of creating a duplicate row.
+        update its rating value (and item_name if provided)
+        instead of creating a duplicate row.
         """
         user = self.context["request"].user
 
         spotify_id = validated_data["spotify_id"]
         item_type = validated_data["item_type"]
         rating_value = validated_data["rating"]
+        item_name = validated_data.get("item_name")  # may be None
+
+        defaults = {"rating": rating_value}
+        if item_name is not None:
+            defaults["item_name"] = item_name
 
         rating_obj, _created = Rating.objects.update_or_create(
             user=user,
             spotify_id=spotify_id,
             item_type=item_type,
-            defaults={"rating": rating_value},
+            defaults=defaults,
         )
         return rating_obj

@@ -57,9 +57,14 @@ class Rating(models.Model):
         help_text="Type of Spotify item being rated",
     )
 
-    # Rating value with 2 decimal places (e.g. 4.75), constrained to [0, 5]
+    item_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Readable name of the item (e.g. track/album/artist name).",
+    )
+
     rating = models.DecimalField(
-        max_digits=3,            
+        max_digits=3,
         decimal_places=2,
         validators=[MinValueValidator(0), MaxValueValidator(5)],
         help_text="Rating from 0.00 to 5.00.",
