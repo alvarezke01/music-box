@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import SpotifyLoginView, SpotifyCallbackView, AuthUserView, NowPlayingView, RecentlyPlayedView, SearchMusicView, RatingListCreateView
+from .views import SpotifyLoginView, SpotifyCallbackView, AuthUserView, NowPlayingView, RecentlyPlayedView, SearchMusicView, RatingListCreateView, RatingItemView
 
 urlpatterns = [
     path("auth/spotify/login/", SpotifyLoginView.as_view(), name="spotify-login"),
@@ -11,5 +11,6 @@ urlpatterns = [
     name="discover-search-music",
     ),
     path("ratings/", RatingListCreateView.as_view(), name="ratings-list-create"),
+    path("ratings/item/", RatingItemView.as_view(), name="ratings-item"),
 ]
 
