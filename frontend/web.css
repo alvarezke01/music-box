@@ -1,0 +1,26 @@
+/* Global web styles */
+
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2b2f3b transparent;
+}
+
+/* Chrome / Edge / WebKit */
+*::-webkit-scrollbar {
+    width: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+    background: #2b2f3b;
+    border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: #3c4150;
+}
