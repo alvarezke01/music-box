@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import SpotifyAccount, Rating
+from .models import SpotifyAccount, Rating, Review
 
 User = get_user_model()
 
@@ -75,3 +75,57 @@ class RatingSerializer(serializers.ModelSerializer):
             defaults=defaults,
         )
         return rating_obj
+class ReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating/updating text reviews.
+
+    - user is taken from request.user (not from the payload)
+    - upsert based on (user, spotify_id, item_type)
+    - text limited to 10,000 characters
+    """
+
+    # Enforce 10,000 char limit 
+    text = serializers.CharField(
+        max_length=10000,
+        allow_blank=True,
+        required=True,
+        help_text="User's review text, up to 10,000 characters.",
+    )
+
+    class Meta:
+        model = Review
+        fields = [
+            "id",
+            "spotify_id",
+            "item_type",
+            "item_name",
+            "text",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+    def create(self, validated_data):
+        """
+        Upsert behavior:
+        If a review for (user, spotify_id, item_type) already exists,
+        update its text (and item_name if provided) instead of creating a duplicate row.
+        """
+        user = self.context["request"].user
+
+        spotify_id = validated_data["spotify_id"]
+        item_type = validated_data["item_type"]
+        text = validated_data["text"]
+        item_name = validated_data.get("item_name")
+
+        defaults = {"text": text}
+        if item_name is not None:
+            defaults["item_name"] = item_name
+
+        review_obj, _created = Review.objects.update_or_create(
+            user=user,
+            spotify_id=spotify_id,
+            item_type=item_type,
+            defaults=defaults,
+        )
+        return review_obj
