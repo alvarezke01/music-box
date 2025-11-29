@@ -16,8 +16,8 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .spotify_client import refresh_spotify_token, spotify_user_get, SpotifyAPIError
-from .models import SpotifyAccount, Rating
-from .serializers import UserSerializer, RatingSerializer
+from .models import SpotifyAccount, Rating, Review
+from .serializers import UserSerializer, RatingSerializer, ReviewSerializer
 
 User = get_user_model()
 
@@ -597,3 +597,36 @@ class RatingItemView(APIView):
             },
             status=200,
         )
+
+class ReviewListCreateView(APIView):
+    """
+    GET /reviews/
+    List the current user's reviews (most recently updated first)
+
+    POST /reviews/
+     Create or update (upsert) a review for a track/album/artist.
+
+    Example POST body:
+    {
+      "spotify_id": "06HL4z0CvFAxyc27GXpf02",
+      "item_type": "artist",
+      "item_name": "Taylor Swift",
+      "text": "I love her songwriting, especially on folklore and evermore..."
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        qs = Review.objects.filter(user=request.user).order_by("-updated_at")
+        serializer = ReviewSerializer(qs, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = ReviewSerializer(
+            data=request.data,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        review_obj = serializer.create(serializer.validated_data)
+        output = ReviewSerializer(review_obj)
+        return Response(output.data, status=201)
