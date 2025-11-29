@@ -43,51 +43,57 @@ export const discoverStyles = StyleSheet.create({
   resultHeader: {
     color: "#ffffff",
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 12,
   },
 
   // Sections (Tracks / Albums / Artists)
   sectionContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
     color: "#e5e7eb",
     fontSize: 16,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: 10,
   },
 
-  // List item row
-  listItemRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  // Horizontal card row
+  cardRow: {
+    paddingRight: 8,
+  },
+
+  // Individual result card
+  resultCard: {
+    width: 130,
+    marginRight: 12,
+    backgroundColor: "#101522",
+    borderRadius: 12,
+    padding: 10,
+  },
+
+  // Images for cards
+  albumImageCard: {
+    width: "100%",
+    aspectRatio: 1,
+    borderRadius: 10,
     marginBottom: 8,
   },
-  listItemTextContainer: {
-    flex: 1,
-  },
-
-  // Images
-  albumArt: {
-    width: 40,
-    height: 40,
-    borderRadius: 4,
-    marginRight: 10,
-  },
-  artistImage: {
-    width: 40,
-    height: 40,
+  artistImageCard: {
+    width: "100%",
+    aspectRatio: 1,
     borderRadius: 999,
-    marginRight: 10,
+    marginBottom: 8,
   },
 
-  // Text styles for items
-  itemTitle: {
+  // Card text
+  cardTitle: {
     color: "#ffffff",
-    fontSize: 14,
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 2,
   },
-  itemSubtitle: {
+  cardSubtitle: {
     color: "#9ca3af",
-    fontSize: 12,
+    fontSize: 11,
   },
 });
