@@ -84,3 +84,55 @@ class Rating(models.Model):
             f"{self.item_type}={self.spotify_id}, "
             f"rating={self.rating})"
         )
+
+class Review(models.Model):
+    """
+    Text review that a user leaves on a track, album, or artist.
+    One review per user per item.
+    """
+    ITEM_TYPE_CHOICES = [
+        ("track", "Track"),
+        ("album", "Album"),
+        ("artist", "Artist"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    spotify_id = models.CharField(
+        max_length=64,
+        help_text="Spotify ID of the track/album/artist being reviewed",
+    )
+    item_type = models.CharField(
+        max_length=10,
+        choices=ITEM_TYPE_CHOICES,
+        help_text="Type of Spotify item being reviewed",
+    )
+
+    item_name = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Human-readable name of the item (e.g. track/album/artist name).",
+    )
+
+    # Up to 10,000 chars 
+    text = models.TextField(
+        blank=True,
+        help_text="User's review text (up to 10,000 characters).",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("user", "spotify_id", "item_type")
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return (
+            f"Review(user={self.user_id}, "
+            f"{self.item_type}={self.spotify_id}, "
+            f"{(self.text[:30] + '...') if self.text else ''})"
+        )
