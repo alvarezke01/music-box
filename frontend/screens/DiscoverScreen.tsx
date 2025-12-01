@@ -4,12 +4,12 @@ import {
   Text,
   ActivityIndicator,
   ScrollView,
-  Image,
 } from "react-native";
 import { discoverStyles } from "./styles/discoverStyles";
 import { SearchBar } from "../components/SearchBar";
 import { API_BASE_URL } from "../config";
 import { useAuth } from "../auth/AuthContext";
+import { ItemCard } from "../components/ItemCard";
 
 // --- Types ---
 type TrackResult = {
@@ -177,39 +177,18 @@ export const DiscoverScreen: React.FC = () => {
                   >
                     <Text style={discoverStyles.sectionTitle}>Artists</Text>
 
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={discoverStyles.cardRow}
-                    >
+                    <View style={discoverStyles.resultsGrid}>
                       {results.artists.map((artist) => (
-                        <View
+                        <ItemCard
                           key={artist.id}
-                          style={discoverStyles.resultCard}
-                        >
-                          {artist.image && (
-                            <Image
-                              source={{ uri: artist.image }}
-                              style={discoverStyles.artistImageCard}
-                            />
-                          )}
-                          <Text
-                            style={discoverStyles.cardTitle}
-                            numberOfLines={1}
-                          >
-                            {artist.name}
-                          </Text>
-                          {artist.genres.length > 0 && (
-                            <Text
-                              style={discoverStyles.cardSubtitle}
-                              numberOfLines={1}
-                            >
-                              {artist.genres[0]}
-                            </Text>
-                          )}
-                        </View>
+                          id={artist.id}
+                          itemType="artist"
+                          imageUrl={artist.image}
+                          title={artist.name}
+                          subtitle={artist.genres[0]}
+                        />
                       ))}
-                    </ScrollView>
+                    </View>
                   </View>
                 );
               }
@@ -220,37 +199,18 @@ export const DiscoverScreen: React.FC = () => {
                   <View key="albums" style={discoverStyles.sectionContainer}>
                     <Text style={discoverStyles.sectionTitle}>Albums</Text>
 
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={discoverStyles.cardRow}
-                    >
+                    <View style={discoverStyles.resultsGrid}>
                       {results.albums.map((album) => (
-                        <View
+                        <ItemCard
                           key={album.id}
-                          style={discoverStyles.resultCard}
-                        >
-                          {album.image && (
-                            <Image
-                              source={{ uri: album.image }}
-                              style={discoverStyles.albumImageCard}
-                            />
-                          )}
-                          <Text
-                            style={discoverStyles.cardTitle}
-                            numberOfLines={1}
-                          >
-                            {album.name}
-                          </Text>
-                          <Text
-                            style={discoverStyles.cardSubtitle}
-                            numberOfLines={1}
-                          >
-                            {album.artists.join(", ")}
-                          </Text>
-                        </View>
+                          id={album.id}
+                          itemType="album"
+                          imageUrl={album.image}
+                          title={album.name}
+                          subtitle={album.artists.join(", ")}
+                        />
                       ))}
-                    </ScrollView>
+                    </View>
                   </View>
                 );
               }
@@ -261,37 +221,18 @@ export const DiscoverScreen: React.FC = () => {
                   <View key="tracks" style={discoverStyles.sectionContainer}>
                     <Text style={discoverStyles.sectionTitle}>Tracks</Text>
 
-                    <ScrollView
-                      horizontal
-                      showsHorizontalScrollIndicator={false}
-                      contentContainerStyle={discoverStyles.cardRow}
-                    >
+                    <View style={discoverStyles.resultsGrid}>
                       {results.tracks.map((track) => (
-                        <View
+                        <ItemCard
                           key={track.id}
-                          style={discoverStyles.resultCard}
-                        >
-                          {track.album_image && (
-                            <Image
-                              source={{ uri: track.album_image }}
-                              style={discoverStyles.albumImageCard}
-                            />
-                          )}
-                          <Text
-                            style={discoverStyles.cardTitle}
-                            numberOfLines={1}
-                          >
-                            {track.name}
-                          </Text>
-                          <Text
-                            style={discoverStyles.cardSubtitle}
-                            numberOfLines={1}
-                          >
-                            {track.artists.join(", ")}
-                          </Text>
-                        </View>
+                          id={track.id}
+                          itemType="track"
+                          imageUrl={track.album_image}
+                          title={track.name}
+                          subtitle={track.artists.join(", ")}
+                        />
                       ))}
-                    </ScrollView>
+                    </View>
                   </View>
                 );
               }
@@ -304,3 +245,4 @@ export const DiscoverScreen: React.FC = () => {
     </View>
   );
 };
+

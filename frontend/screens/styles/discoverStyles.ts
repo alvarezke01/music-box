@@ -57,43 +57,10 @@ export const discoverStyles = StyleSheet.create({
     marginBottom: 10,
   },
 
-  // Horizontal card row
-  cardRow: {
-    paddingRight: 8,
-  },
-
-  // Individual result card
-  resultCard: {
-    width: 130,
-    marginRight: 12,
-    backgroundColor: "#101522",
-    borderRadius: 12,
-    padding: 10,
-  },
-
-  // Images for cards
-  albumImageCard: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  artistImageCard: {
-    width: "100%",
-    aspectRatio: 1,
-    borderRadius: 999,
-    marginBottom: 8,
-  },
-
-  // Card text
-  cardTitle: {
-    color: "#ffffff",
-    fontSize: 13,
-    fontWeight: "600",
-    marginBottom: 2,
-  },
-  cardSubtitle: {
-    color: "#9ca3af",
-    fontSize: 11,
+  // Grid of cards — wraps to multiple rows based on screen width
+  resultsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
 });
+
