@@ -630,3 +630,75 @@ class ReviewListCreateView(APIView):
         review_obj = serializer.create(serializer.validated_data)
         output = ReviewSerializer(review_obj)
         return Response(output.data, status=201)
+
+class ReviewItemView(APIView):
+    """
+    GET /reviews/item/?spotify_id=...&item_type=track|album|artist
+
+    Returns the current user's review for a specific item, if it exists.
+
+    Response if review exists:
+    {
+      "exists": true,
+      "review": {
+        "id": 1,
+        "spotify_id": "...",
+        "item_type": "album",
+        "item_name": "Midnights",
+        "text": "I love this album...",
+        "created_at": "...",
+        "updated_at": "..."
+      }
+    }
+
+    Response if no review:
+    {
+      "exists": false,
+      "review": null
+    }
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        spotify_id = request.query_params.get("spotify_id")
+        item_type = request.query_params.get("item_type")
+
+        # Validation
+        if not spotify_id or not item_type:
+            return Response(
+                {"detail": "spotify_id and item_type are required query parameters."},
+                status=400,
+            )
+
+        # Validate item_type against model choices
+        valid_types = {choice[0] for choice in Review.ITEM_TYPE_CHOICES}
+        if item_type not in valid_types:
+            return Response(
+                {"detail": f"item_type must be one of {sorted(valid_types)}"},
+                status=400,
+            )
+
+        # Look up review for current user + item
+        review_obj = Review.objects.filter(
+            user=request.user,
+            spotify_id=spotify_id,
+            item_type=item_type,
+        ).first()
+
+        if review_obj is None:
+            return Response(
+                {
+                    "exists": False,
+                    "review": None,
+                },
+                status=200,
+            )
+
+        serializer = ReviewSerializer(review_obj)
+        return Response(
+            {
+                "exists": True,
+                "review": serializer.data,
+            },
+            status=200,
+        )
