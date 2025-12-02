@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, Image, Pressable } from "react-native";
-import { itemCardStyles, itemCardStyles as Styles} from "./styles/itemCardStyles";
+import { itemCardStyles } from "./styles/itemCardStyles";
 
 export type ItemType = "track" | "album" | "artist";
 
@@ -10,6 +10,7 @@ export type ItemCardProps = {
   imageUrl: string | null;
   title: string;
   subtitle?: string;
+  isSelected?: boolean;
   onPress?: () => void;
 };
 
@@ -18,6 +19,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   itemType,
   title,
   subtitle,
+  isSelected,
   onPress,
 }) => {
   const isArtist = itemType === "artist";
@@ -27,13 +29,18 @@ export const ItemCard: React.FC<ItemCardProps> = ({
       onPress={onPress}
       style={({ pressed }) => [
         itemCardStyles.cardContainer,
+        isSelected && itemCardStyles.cardSelected,
         pressed && itemCardStyles.cardPressed,
       ]}
     >
       {imageUrl && (
         <Image
           source={{ uri: imageUrl }}
-          style={isArtist ? itemCardStyles.artistImage : itemCardStyles.squareImage}
+          style={
+            isArtist
+              ? itemCardStyles.artistImage
+              : itemCardStyles.squareImage
+          }
         />
       )}
       <View style={itemCardStyles.textContainer}>
@@ -49,3 +56,4 @@ export const ItemCard: React.FC<ItemCardProps> = ({
     </Pressable>
   );
 };
+

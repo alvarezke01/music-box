@@ -9,6 +9,10 @@ export const itemCardStyles = StyleSheet.create({
     borderRadius: 12,
     padding: 10,
   },
+  cardSelected: {
+    borderWidth: 1,
+    borderColor: "#22c55e",
+  },
   cardPressed: {
     transform: [{ scale: 0.97 }],
     opacity: 0.9,
@@ -39,3 +43,4 @@ export const itemCardStyles = StyleSheet.create({
     fontSize: 11,
   },
 });
+
