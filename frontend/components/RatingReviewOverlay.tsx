@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -31,24 +31,22 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
   const [ratingInput, setRatingInput] = useState<string>("");
   const [reviewInput, setReviewInput] = useState<string>("");
 
-  // fetch existing rating + review for this item
-  const {
-    data,
-    loading: loadingExisting,
-    error,
-  } = useRatingReview(item, visible);
-
-  // track if already initialized from backend for this item/open
+  const flipAnim = useRef(new Animated.Value(0)).current;
   const initializedRef = useRef<string | null>(null);
 
-  // zoom + flip animation
-  const flipAnim = useRef(new Animated.Value(0)).current;
+  const {
+    data,
+    loading,
+    error,
+    saving,
+    saveError,
+    saveRatingReview,
+  } = useRatingReview(item, visible);
 
-  // Effect 1: whenever we open the overlay for an item
+  // When overlay opens for a given item: reset inputs + animation
   useEffect(() => {
     if (!visible || !item) return;
 
-    // reset local state on open / item change
     setRatingInput("");
     setReviewInput("");
     initializedRef.current = null;
@@ -61,18 +59,17 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
     }).start();
   }, [visible, item, flipAnim]);
 
-  // Effect 2: initialize inputs from backend data exactly once per open
+  // Initialize rating/review from backend once per open
   useEffect(() => {
-    if (!visible || !item || !data) return;
-
-    // make sure data we have belongs to item
+    if (!visible || !item) return;
+    if (!data) return;
     if (data.itemId !== item.id) return;
 
     // already initialized for this item during this open
     if (initializedRef.current === item.id) return;
 
-    const backendRating = data.rating; // number | null
-    const backendReview = data.review; // string | null
+    const backendRating = data.rating;
+    const backendReview = data.review;
 
     setRatingInput(
       backendRating != null ? backendRating.toFixed(2) : ""
@@ -82,26 +79,7 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
     initializedRef.current = item.id;
   }, [visible, item, data]);
 
-  if (!visible || !item) return null;
-
-  const animatedCardStyle = {
-    transform: [
-      {
-        scale: flipAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.8, 1],
-        }),
-      },
-      {
-        rotateY: flipAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: ["-90deg", "0deg"],
-        }),
-      },
-    ],
-  };
-
-  // parse rating 0–5
+  // Numeric rating for star fill (0–5)
   const numericRating = (() => {
     const num = parseFloat(ratingInput);
     if (isNaN(num)) return 0;
@@ -150,6 +128,91 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
     });
   };
 
+  /**
+   * Disable Save when:
+   *  - there is no user input at all, OR
+   *  - the normalized rating & review match the backend values (no changes).
+   */
+  const nothingToSave = (() => {
+    const ratingStr = ratingInput.trim();
+    const reviewStr = reviewInput.trim();
+
+    const hasValidRating =
+      ratingStr !== "" && !Number.isNaN(parseFloat(ratingStr));
+    const hasReview = reviewStr !== "";
+
+    const currentRating = hasValidRating
+      ? Math.min(5, Math.max(0, parseFloat(ratingStr)))
+      : null;
+    const currentReview = hasReview ? reviewStr : null;
+
+    // Backend baseline
+    const backendRating = data?.rating ?? null;
+    const backendReviewRaw = data?.review ?? null;
+    const backendReview =
+      backendReviewRaw === null
+        ? null
+        : backendReviewRaw.trim() === ""
+        ? null
+        : backendReviewRaw.trim();
+
+    const noUserInput = !hasValidRating && !hasReview;
+
+    const noDiff =
+      currentRating === backendRating &&
+      (currentReview ?? null) === backendReview;
+
+    return noUserInput || noDiff;
+  })();
+
+  const handleSave = useCallback(
+    async () => {
+      if (!item) return;
+
+      const ratingStr = ratingInput.trim();
+      const parsed = parseFloat(ratingStr);
+
+      const rating =
+        ratingStr === "" || Number.isNaN(parsed)
+          ? null
+          : Math.min(5, Math.max(0, parsed));
+
+      const reviewStr = reviewInput.trim();
+      const review = reviewStr === "" ? null : reviewStr;
+
+      const ok = await saveRatingReview({
+        item,
+        rating,
+        review,
+      });
+
+      if (ok) {
+        onClose();
+      }
+    },
+    [item, ratingInput, reviewInput, saveRatingReview, onClose]
+  );
+
+  // Early return AFTER hooks
+  if (!visible || !item) return null;
+
+  const animatedCardStyle = {
+    transform: [
+      {
+        scale: flipAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.8, 1],
+        }),
+      },
+      {
+        rotateY: flipAnim.interpolate({
+          inputRange: [0, 1],
+          outputRange: ["-90deg", "0deg"],
+        }),
+      },
+    ],
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
@@ -178,7 +241,7 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
               {item.itemType.toUpperCase()}
             </Text>
 
-            {loadingExisting && (
+            {loading && (
               <Text style={styles.loadingExistingText}>
                 Loading your previous rating…
               </Text>
@@ -208,8 +271,10 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
               onChangeText={setReviewInput}
             />
 
-            {error && (
-              <Text style={styles.errorText}>{error}</Text>
+            {(error || saveError) && (
+              <Text style={styles.errorText}>
+                {saveError || error}
+              </Text>
             )}
 
             {/* Buttons */}
@@ -221,11 +286,19 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
                 <Text style={styles.secondaryButtonText}>Cancel</Text>
               </Pressable>
 
-              <View style={styles.primaryButton}>
+              <Pressable
+                onPress={handleSave}
+                disabled={nothingToSave || saving}
+                style={[
+                  styles.primaryButton,
+                  (nothingToSave || saving) &&
+                    styles.primaryButtonDisabled,
+                ]}
+              >
                 <Text style={styles.primaryButtonText}>
-                  Save (not wired yet)
+                  {saving ? "Saving…" : "Save"}
                 </Text>
-              </View>
+              </Pressable>
             </View>
           </ScrollView>
         </Animated.View>
@@ -233,3 +306,4 @@ export const RatingReviewOverlay: React.FC<RatingReviewOverlayProps> = ({
     </KeyboardAvoidingView>
   );
 };
+

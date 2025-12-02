@@ -14,12 +14,12 @@ export const ratingReviewOverlayStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 20, 
+    paddingVertical: 20, // keeps card off very top/bottom on short viewports
   },
   selectedCard: {
     width: 420,
     maxWidth: "100%",
-    maxHeight: "80%", 
+    maxHeight: "80%", // allow it to shrink on short screens
     backgroundColor: "#050814",
     borderRadius: 20,
     borderWidth: 1,
@@ -145,15 +145,20 @@ export const ratingReviewOverlayStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  primaryButtonDisabled: {
+    opacity: 0.6,
+  },
+
   loadingExistingText: {
-  color: "#9ca3af",
-  fontSize: 11,
-  marginTop: 4,
-  marginBottom: 8,
+    color: "#9ca3af",
+    fontSize: 11,
+    marginTop: 4,
+    marginBottom: 8,
   },
   errorText: {
-  color: "#f97373",
-  fontSize: 12,
-  marginTop: 8,
+    color: "#f97373",
+    marginTop: 8,
+    fontSize: 12,
   },
 });
+
