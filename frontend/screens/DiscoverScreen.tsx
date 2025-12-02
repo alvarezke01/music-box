@@ -10,6 +10,8 @@ import { SearchBar } from "../components/SearchBar";
 import { API_BASE_URL } from "../config";
 import { useAuth } from "../auth/AuthContext";
 import { ItemCard } from "../components/ItemCard";
+import { useSelectedItemCard } from "../hooks/selectItemCard";
+import { RatingReviewOverlay } from "../components/RatingReviewOverlay";
 
 // --- Types ---
 type TrackResult = {
@@ -82,6 +84,8 @@ export const DiscoverScreen: React.FC = () => {
   const [loading, setLoading] = useState(false); // search loading
   const [error, setError] = useState<string | null>(null);
 
+  const { selectedItem, selectItem, clearSelection } = useSelectedItemCard();
+
   const handleSearchSubmit = async () => {
     const trimmed = query.trim();
     if (!trimmed) return;
@@ -128,6 +132,16 @@ export const DiscoverScreen: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectItem = (params: {
+    id: string;
+    itemType: "track" | "album" | "artist";
+    title: string;
+    subtitle?: string;
+    imageUrl?: string | null;
+  }) => {
+    selectItem(params);
   };
 
   return (
@@ -186,6 +200,19 @@ export const DiscoverScreen: React.FC = () => {
                           imageUrl={artist.image}
                           title={artist.name}
                           subtitle={artist.genres[0]}
+                          isSelected={
+                            selectedItem?.id === artist.id &&
+                            selectedItem.itemType === "artist"
+                          }
+                          onPress={() =>
+                            handleSelectItem({
+                              id: artist.id,
+                              itemType: "artist",
+                              title: artist.name,
+                              subtitle: artist.genres[0],
+                              imageUrl: artist.image,
+                            })
+                          }
                         />
                       ))}
                     </View>
@@ -208,6 +235,19 @@ export const DiscoverScreen: React.FC = () => {
                           imageUrl={album.image}
                           title={album.name}
                           subtitle={album.artists.join(", ")}
+                          isSelected={
+                            selectedItem?.id === album.id &&
+                            selectedItem.itemType === "album"
+                          }
+                          onPress={() =>
+                            handleSelectItem({
+                              id: album.id,
+                              itemType: "album",
+                              title: album.name,
+                              subtitle: album.artists.join(", "),
+                              imageUrl: album.image,
+                            })
+                          }
                         />
                       ))}
                     </View>
@@ -230,6 +270,19 @@ export const DiscoverScreen: React.FC = () => {
                           imageUrl={track.album_image}
                           title={track.name}
                           subtitle={track.artists.join(", ")}
+                          isSelected={
+                            selectedItem?.id === track.id &&
+                            selectedItem.itemType === "track"
+                          }
+                          onPress={() =>
+                            handleSelectItem({
+                              id: track.id,
+                              itemType: "track",
+                              title: track.name,
+                              subtitle: track.artists.join(", "),
+                              imageUrl: track.album_image,
+                            })
+                          }
                         />
                       ))}
                     </View>
@@ -242,7 +295,15 @@ export const DiscoverScreen: React.FC = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Reusable rating/review overlay */}
+      <RatingReviewOverlay
+        visible={!!selectedItem}
+        item={selectedItem}
+        onClose={clearSelection}
+      />
     </View>
   );
 };
+
 
